@@ -42,13 +42,12 @@ class Youtube2mp3(object):
     def white_list(self,subject):
         with open('whitelist.txt') as f:
             for name in f.read().splitlines():
-                print("subject => " + str(subject))
-                print "name => " + str(name)
                 allowed = re.search(str(name), str(subject), re.M | re.I)
                 if allowed is not None:
-                    print " -> ALLOWED: " + str(allowed.group())
+                    print("(INFO) " +str(allowed.group()) + " is in the whitelist.")
                     return True
-                print("You do not have permission to convert this video!")
+        print("You do not have permission to convert this video!")
+        return False
     
     def convert_video(self,url,sendto):
         print("Converting video now!")
