@@ -16,10 +16,12 @@ class Youtube2mp3(object):
     def __init__(self):
         self.data_for_converter()        
 
-    def song_name(self):
-        mp3 = re.search('(^.*.mp3)', str(os.popen('ls -t | tail -n1').read()), re.M | re.I)
-        if mp3 is not None: 
-            return str(mp3.group())
+    def song_name(self,url):
+        mp3 = os.popen("/usr/bin/youtube-dl --no-part "
+            + str(url)
+            + " --restrict-filenames --audio-format mp3"
+            + " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
+        return '/home/anthony/Music/' + re.sub('\.[a-z]{3,5}', '.mp3', str(mp3))
     
     def send_mail(self,sender,sendto,password,port,subject,body,file_name):
         try:
@@ -51,15 +53,16 @@ class Youtube2mp3(object):
     
     def convert_video(self,url,sendto):
         print("Converting video now!")
-        os.system("/usr/bin/youtube-dl "
+        os.system("/usr/bin/youtube-dl --no-part "
             + str(url)
-            + " -x --audio-format mp3 -o \"%(artist)s - %(title)s.%(ext)s\"")
+            + " --restrict-filenames --extract-audio"
+            + " --audio-format mp3 -o \"/home/anthony/Music/%(artist)s-%(title)s.%(ext)s\"")
         print("(INFO) Sending song via E-mail.")
         self.send_mail('sshmonitorapp@gmail.com',
             sendto,
             'hkeyscwhgxjzafvj',
             587,'song','converted song attached',
-            self.song_name())
+            self.song_name(url))
         sys.exit(0)
     
     def data_for_converter(self):
@@ -77,7 +80,7 @@ class Youtube2mp3(object):
                     subject = re.search('(^Subject: )(.*)', str(data[0][1]), re.M | re.I)
                     message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
                         str(body[0][1]), re.M | re.I)
-                    mail.store(eid,'+FLAGS','\Deleted')
+                    #mail.store(eid,'+FLAGS','\Deleted')
                     if message is not None and message is not None and subject is not None:
                         if self.white_list(subject.group(2)):
                             self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
