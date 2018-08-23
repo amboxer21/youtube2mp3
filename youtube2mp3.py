@@ -69,18 +69,20 @@ class Youtube2mp3(object):
             mail.login('sshmonitorapp@gmail.com','hkeyscwhgxjzafvj')
             mail.select('inbox')
     
-            typ, data = mail.search(None, 'ALL')
-    
-            for eid in range(int(data[0].split()[-1]), int(data[0].split()[0]), -1):
-                typ, body = mail.fetch(eid, '(BODY[TEXT])' )
-                typ, data = mail.fetch(eid, '(RFC822)' )
-                sender  = re.search('(^From: )(.*)(\<.*\>)', str(data[0][1]), re.M | re.I)
-                subject = re.search('(^Subject: )(.*)', str(data[0][1]), re.M | re.I)
-                message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
-                    str(body[0][1]), re.M | re.I)
-                if message is not None and message is not None and subject is not None:
-                    if self.white_list(subject.group(2)):
-                        self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
+            (code, data) = mail.search(None, '(UNSEEN)')
+            if code == 'OK':
+                for eid in data[0].split(' '):
+                    (typ, body) = mail.fetch(eid, '(BODY[TEXT])' )
+                    (typ, data) = mail.fetch(eid, '(RFC822)' )
+                    sender  = re.search('(^From: )(.*)(\<.*\>)', str(data[0][1]), re.M | re.I)
+                    subject = re.search('(^Subject: )(.*)', str(data[0][1]), re.M | re.I)
+                    message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
+                        str(body[0][1]), re.M | re.I)
+                    mail.store(eid,'+FLAGS','\Deleted')
+                    if message is not None and message is not None and subject is not None:
+                        if self.white_list(subject.group(2)):
+                            self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
+                mail.expunge()
     
         except Exception as e:
             print("Exception e => " + str(e))
