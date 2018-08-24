@@ -5,11 +5,12 @@ import logging
 import smtplib
 import imaplib
 import mimetypes
+import logging.handlers
     
 from email.mime.audio import MIMEAudio
 from email.MIMEMultipart import MIMEMultipart
 
-class Logging():
+class Logging(object):
     def log(self,level,message):
         comm = re.search("(WARN|INFO|ERROR)", str(level), re.M)
         if comm is None:
@@ -23,11 +24,8 @@ class Logging():
             root = logging.getLogger()
             root.setLevel(os.environ.get("LOGLEVEL", str(level)))
             root.addHandler(handler)
-            # Log all calls to this class in the logfile no matter what.
             logging.exception("(" + str(level) + ") " + "ImageCapture - " + str(message))
-            # Print to stdout only if the verbose option is passed or log level = ERROR.
-            if options.verbose or comm.group() == 'ERROR':
-                print("(" + str(level) + ") " + "ImageCapture - " + str(message))
+            print("(" + str(level) + ") " + "ImageCapture - " + str(message))
         except Exception as e:
             print("Error in Logging class => " + str(e))
             pass
@@ -44,7 +42,7 @@ class Youtube2mp3(Logging):
             + str(url)
             + " --restrict-filenames --audio-format mp3"
             + " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
-        return '/home/anthony/Music/' + re.sub('\.[a-z]{3,5}', '.mp3', str(mp3))
+        return '/home/anthony/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
     
     def send_mail(self,sender,sendto,password,port,subject,body,file_name):
         try:
@@ -103,7 +101,8 @@ class Youtube2mp3(Logging):
                     subject = re.search('(^Subject: )(.*)', str(data[0][1]), re.M | re.I)
                     message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
                         str(body[0][1]), re.M | re.I)
-                    mail.store(eid,'+FLAGS','\Deleted')
+                    self.logger("INFO", "data: " + str(data[0][1]))
+                    #mail.store(eid,'+FLAGS','\Deleted')
                     if message is not None and message is not None and subject is not None:
                         if self.white_list(subject.group(2)):
                             self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
