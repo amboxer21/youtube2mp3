@@ -1,19 +1,42 @@
 import os
 import re
 import sys
+import logging
 import smtplib
 import imaplib
 import mimetypes
     
-from email import encoders
 from email.mime.audio import MIMEAudio
-   
-from subprocess import call
 from email.MIMEMultipart import MIMEMultipart
+
+class Logging():
+    def log(self,level,message):
+        comm = re.search("(WARN|INFO|ERROR)", str(level), re.M)
+        if comm is None:
+            print(level + " is not a level. Use: WARN, ERROR, or INFO!")
+            return
+        try:
+            handler = logging.handlers.WatchedFileHandler(
+                os.environ.get("LOGFILE","/var/log/youtube2mp3.log"))
+            formatter = logging.Formatter(logging.BASIC_FORMAT)
+            handler.setFormatter(formatter)
+            root = logging.getLogger()
+            root.setLevel(os.environ.get("LOGLEVEL", str(level)))
+            root.addHandler(handler)
+            # Log all calls to this class in the logfile no matter what.
+            logging.exception("(" + str(level) + ") " + "ImageCapture - " + str(message))
+            # Print to stdout only if the verbose option is passed or log level = ERROR.
+            if options.verbose or comm.group() == 'ERROR':
+                print("(" + str(level) + ") " + "ImageCapture - " + str(message))
+        except Exception as e:
+            print("Error in Logging class => " + str(e))
+            pass
+        return
     
-class Youtube2mp3(object):
+class Youtube2mp3(Logging):
 
     def __init__(self):
+        super(Youtube2mp3, self).__init__()
         self.data_for_converter()        
 
     def song_name(self,url):
@@ -35,29 +58,29 @@ class Youtube2mp3(object):
             mail.starttls()
             mail.login(sender,password)
             mail.sendmail(sender, sendto, message.as_string())
-            print("(INFO) Sent email successfully!")
+            self.log("INFO", "Sent email successfully!")
         except smtplib.SMTPAuthenticationError:
-            print("(ERROR) Could not athenticate with password and username!")
+            self.log("ERROR", "Could not athenticate with password and username!")
         except Exception as e:
-                print("(ERROR) Unexpected error in send_mail() error e => " + str(e))
+                self.log("ERROR", "Unexpected error in send_mail() error e => " + str(e))
     
     def white_list(self,subject):
         with open('whitelist.txt') as f:
             for name in f.read().splitlines():
                 allowed = re.search(str(name), str(subject), re.M | re.I)
                 if allowed is not None:
-                    print("(INFO) " +str(allowed.group()) + " is in the whitelist.")
+                    self.log("INFO", str(allowed.group()) + " is in the whitelist.")
                     return True
-        print("You do not have permission to convert this video!")
+        self.log("WARN", "You do not have permission to convert this video!")
         return False
     
     def convert_video(self,url,sendto):
-        print("Converting video now!")
+        self.log("INFO", "Converting video now!")
         os.system("/usr/bin/youtube-dl --no-part "
             + str(url)
             + " --restrict-filenames --extract-audio"
             + " --audio-format mp3 -o \"/home/anthony/Music/%(artist)s-%(title)s.%(ext)s\"")
-        print("(INFO) Sending song via E-mail.")
+        self.log("INFO", "Sending song via E-mail.")
         self.send_mail('sshmonitorapp@gmail.com',
             sendto,
             'hkeyscwhgxjzafvj',
@@ -87,7 +110,7 @@ class Youtube2mp3(object):
                 mail.expunge()
     
         except Exception as e:
-            print("Exception e => " + str(e))
+            self.log("ERROR", "Exception e => " + str(e))
     
 if __name__ == '__main__':
     Youtube2mp3()
