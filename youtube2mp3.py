@@ -13,9 +13,6 @@ from email.MIMEMultipart import MIMEMultipart
 class Logging(object):
     def log(self,level,message):
         comm = re.search("(WARN|INFO|ERROR)", str(level), re.M)
-        if comm is None:
-            print(level + " is not a level. Use: WARN, ERROR, or INFO!")
-            return
         try:
             handler = logging.handlers.WatchedFileHandler(
                 os.environ.get("LOGFILE","/var/log/youtube2mp3.log"))
@@ -24,13 +21,29 @@ class Logging(object):
             root = logging.getLogger()
             root.setLevel(os.environ.get("LOGLEVEL", str(level)))
             root.addHandler(handler)
-            logging.exception("(" + str(level) + ") " + "ImageCapture - " + str(message))
-            print("(" + str(level) + ") " + "ImageCapture - " + str(message))
+            # Log all calls to this class in the logfile no matter what.
+            if comm is None:
+                print(level + " is not a level. Use: WARN, ERROR, or INFO!")
+                return
+            elif comm.group() == 'ERROR':
+                logging.error("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+            elif comm.group() == 'INFO':
+                logging.info("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+            elif comm.group() == 'WARN':
+                logging.warn("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+            print("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+        except IOError as e:
+            if re.search('\[Errno 13\] Permission denied:', str(e), re.M | re.I):
+                print("(ERROR) Youtube2Mp3 - Must be sudo to run Youtube2Mp3!")
+                sys.exit(0)
+            print("(ERROR) Youtube2Mp3 - IOError in Logging class => " + str(e))
+            logging.error("(ERROR) Youtube2Mp3 - IOError => " + str(e))
         except Exception as e:
-            print("Error in Logging class => " + str(e))
+            print("(ERROR) Youtube2Mp3 - Exception in Logging class => " + str(e))
+            logging.error("(ERROR) Youtube2Mp3 - Exception => " + str(e))
             pass
         return
-    
+
 class Youtube2mp3(Logging):
 
     def __init__(self):
@@ -102,7 +115,7 @@ class Youtube2mp3(Logging):
                     message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
                         str(body[0][1]), re.M | re.I)
                     self.logger("INFO", "data: " + str(data[0][1]))
-                    mail.store(eid,'+FLAGS','\Deleted')
+                    #mail.store(eid,'+FLAGS','\Deleted')
                     if message is not None and message is not None and subject is not None:
                         if self.white_list(subject.group(2)):
                             self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
