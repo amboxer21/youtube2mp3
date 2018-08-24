@@ -35,7 +35,7 @@ class Youtube2mp3(Logging):
 
     def __init__(self):
         super(Youtube2mp3, self).__init__()
-        self.data_for_converter()        
+        self.parse_email()        
 
     def song_name(self,url):
         mp3 = os.popen("/usr/bin/youtube-dl --no-part "
@@ -86,7 +86,7 @@ class Youtube2mp3(Logging):
             self.song_name(url))
         sys.exit(0)
     
-    def data_for_converter(self):
+    def parse_email(self):
         try:
             mail = imaplib.IMAP4_SSL('smtp.gmail.com')
             mail.login('sshmonitorapp@gmail.com','hkeyscwhgxjzafvj')
@@ -102,7 +102,7 @@ class Youtube2mp3(Logging):
                     message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
                         str(body[0][1]), re.M | re.I)
                     self.logger("INFO", "data: " + str(data[0][1]))
-                    #mail.store(eid,'+FLAGS','\Deleted')
+                    mail.store(eid,'+FLAGS','\Deleted')
                     if message is not None and message is not None and subject is not None:
                         if self.white_list(subject.group(2)):
                             self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
