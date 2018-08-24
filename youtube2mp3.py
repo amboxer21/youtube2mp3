@@ -75,14 +75,16 @@ class Youtube2mp3(Logging):
         except Exception as e:
                 self.log("ERROR", "Unexpected error in send_mail() error e => " + str(e))
     
-    def white_list(self,subject):
+    def white_list(self,passkey,sender):
+        sender = re.sub('[<>]','',str(sender))
         with open('whitelist.txt') as f:
             for name in f.read().splitlines():
-                allowed = re.search(str(name), str(subject), re.M | re.I)
+                allowed = re.search(str(passkey)+":"+str(sender), str(name), re.M | re.I)
                 if allowed is not None:
-                    self.log("INFO", str(allowed.group()) + " is in the whitelist.")
+                    self.log("INFO", str(allowed.group().split(":")[1]) + " is an authorized E-mail!")
                     return True
         self.log("WARN", "You do not have permission to convert this video!")
+        self.log("INFO", "KEY => " + str(allowed.group()) + " is NOT unathorized!")
         return False
     
     def convert_video(self,url,sendto):
@@ -93,7 +95,7 @@ class Youtube2mp3(Logging):
             + " --audio-format mp3 -o \"/home/anthony/Music/%(artist)s-%(title)s.%(ext)s\"")
         self.log("INFO", "Sending song via E-mail.")
         self.send_mail('sshmonitorapp@gmail.com',
-            sendto,
+            re.sub('[<>]','',str(sendto)),
             'hkeyscwhgxjzafvj',
             587,'song','converted song attached',
             self.song_name(url))
@@ -111,14 +113,14 @@ class Youtube2mp3(Logging):
                     (typ, body) = mail.fetch(eid, '(BODY[TEXT])' )
                     (typ, data) = mail.fetch(eid, '(RFC822)' )
                     sender  = re.search('(^From: )(.*)(\<.*\>)', str(data[0][1]), re.M | re.I)
-                    subject = re.search('(^Subject: )(.*)', str(data[0][1]), re.M | re.I)
+                    subject = re.search('(^Subject: )([a-z0-9\-\_]+)', str(data[0][1]), re.M | re.I)
                     message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
                         str(body[0][1]), re.M | re.I)
                     self.log("INFO", "data: " + str(data[0][1]))
                     #mail.store(eid,'+FLAGS','\Deleted')
                     if message is not None and message is not None and subject is not None:
-                        if self.white_list(subject.group(2)):
-                            self.convert_video(message.group(),re.sub('[<>]','',str(sender.group(3))))
+                        if self.white_list(subject.group(2),sender.group(3)):
+                            self.convert_video(message.group(),sender.group(3))
                 mail.expunge()
     
         except Exception as e:
