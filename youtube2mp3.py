@@ -117,7 +117,7 @@ class Youtube2mp3(Logging):
                     message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
                         str(body[0][1]), re.M | re.I)
                     self.log("INFO", "data: " + str(data[0][1]))
-                    #mail.store(eid,'+FLAGS','\Deleted')
+                    mail.store(eid,'+FLAGS','\Deleted')
                     if message is not None and message is not None and subject is not None:
                         if self.white_list(subject.group(2),sender.group(3)):
                             self.convert_video(message.group(),sender.group(3))
