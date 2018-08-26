@@ -15,7 +15,7 @@ class Logging(object):
         comm = re.search("(WARN|INFO|ERROR)", str(level), re.M)
         try:
             handler = logging.handlers.WatchedFileHandler(
-                os.environ.get("LOGFILE","/var/log/youtube2mp3.log"))
+                os.environ.get("LOGFILE","/home/anthony/.youtube2mp3/youtube2mp3.log"))
             formatter = logging.Formatter(logging.BASIC_FORMAT)
             handler.setFormatter(formatter)
             root = logging.getLogger()
@@ -55,7 +55,7 @@ class Youtube2mp3(Logging):
             + str(url)
             + " --restrict-filenames --audio-format mp3"
             + " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
-        return '/home/anthony/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
+        return '/home/anthony/.youtube2mp3/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
     
     def send_mail(self,sender,sendto,password,port,subject,body,file_name):
         try:
@@ -77,7 +77,7 @@ class Youtube2mp3(Logging):
     
     def white_list(self,passkey,sender):
         sender = re.sub('[<>]','',str(sender))
-        with open('whitelist.txt') as f:
+        with open('/home/anthony/.youtube2mp3/whitelist.txt') as f:
             for name in f.read().splitlines():
                 allowed = re.search(str(passkey)+":"+str(sender), str(name), re.M | re.I)
                 if allowed is not None:
@@ -92,7 +92,7 @@ class Youtube2mp3(Logging):
         os.system("/usr/bin/youtube-dl --no-part "
             + str(url)
             + " --restrict-filenames --extract-audio"
-            + " --audio-format mp3 -o \"/home/anthony/Music/%(artist)s-%(title)s.%(ext)s\"")
+            + " --audio-format mp3 -o \"/home/anthony/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
         self.log("INFO", "Sending song via E-mail.")
         self.send_mail('sshmonitorapp@gmail.com',
             re.sub('[<>]','',str(sendto)),
@@ -122,9 +122,12 @@ class Youtube2mp3(Logging):
                         if self.white_list(subject.group(2),sender.group(3)):
                             self.convert_video(message.group(),sender.group(3))
                 mail.expunge()
-    
         except Exception as e:
-            self.log("ERROR", "Exception e => " + str(e))
+            if re.search("FETCH command error: BAD", str(e), re.I):
+                #self.log("WARN", "No unread E-mails in your inbox.")
+                pass
+            else:
+                self.log("ERROR", "Exception e => " + str(e))
     
 if __name__ == '__main__':
     Youtube2mp3()
