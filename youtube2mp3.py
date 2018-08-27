@@ -87,10 +87,9 @@ class Logging(object):
             pass
         return
 
-class Youtube2mp3(Logging):
+class Youtube2mp3(Logging,FileOpts):
     def __init__(self):
         super(Youtube2mp3, self).__init__()
-        FileOpts()
         self.parse_email()        
 
     def song_name(self,url):
