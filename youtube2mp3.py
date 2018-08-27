@@ -1,14 +1,57 @@
 import os
 import re
 import sys
+import errno
 import logging
 import smtplib
 import imaplib
 import mimetypes
+import subprocess
 import logging.handlers
     
+from subprocess import Popen
 from email.mime.audio import MIMEAudio
 from email.MIMEMultipart import MIMEMultipart
+
+class User(object):
+    def name(self):
+        comm = subprocess.Popen(["users"], shell=True, stdout=subprocess.PIPE)
+        return re.search("(\w+)", str(comm.stdout.read())).group()
+
+class FileOpts(User):
+    def __init__(self):
+        super(FileOpts, self).__init__()
+        if not self.file_exists(self.music_directory()):
+            if not self.dir_exists(self.root_directory()):
+                self.mkdir_p(self.root_directory())
+                self.create_file(self.root_directory() + 'youtube2mp3.log')
+                self.create_file(self.root_directory() + 'whitelist.txt')
+            self.mkdir_p(self.music_directory())
+
+    def root_directory(self):
+        return "/home/" + str(self.name()) + "/.youtube2mp3"
+
+    def music_directory(self):
+        return str(self.root_directory()) + "/Music"
+
+    def file_exists(self,file_name):
+        return os.path.isfile(file_name)
+
+    def create_file(self,file_name):
+        if not self.file_exists(file_name):
+            open(file_name, 'w')
+
+    def dir_exists(self,dir_path):
+        return os.path.isdir(dir_path)
+
+    def mkdir_p(self,dir_path):
+        try:
+            os.makedirs(dir_path)
+        except OSError as e:
+            if e.errno == errno.EEXIST and self.dir_exists(dir_path):
+                pass
+            else:
+                raise
 
 class Logging(object):
     def log(self,level,message):
@@ -48,6 +91,7 @@ class Youtube2mp3(Logging):
 
     def __init__(self):
         super(Youtube2mp3, self).__init__()
+	FileOpts()
         self.parse_email()        
 
     def song_name(self,url):
@@ -130,4 +174,5 @@ class Youtube2mp3(Logging):
                 self.log("ERROR", "Exception e => " + str(e))
     
 if __name__ == '__main__':
+
     Youtube2mp3()
