@@ -173,18 +173,17 @@ class Youtube2mp3(Logging,FileOpts):
                 self.log("ERROR", "Exception e => " + str(e))
 
 class Threading(Youtube2mp3):
-    def __init__(self, interval=1):
+    def __init__(self, seconds=1):
         super(Threading, self).__init__()
-        self.interval = interval
+        self.seconds = seconds
         thread = threading.Thread(target=self.run, args=())
         thread.deamon = True
         thread.start()
 
     def run(self):
         while True:
-            print("Parsing E-mail.")
             self.parse_email() 
-            time.sleep(self.interval)
+            time.sleep(self.seconds)
     
 if __name__ == '__main__':
     Threading()
