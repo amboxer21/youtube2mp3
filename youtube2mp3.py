@@ -1,10 +1,12 @@
 import os
 import re
 import sys
+import time
 import errno
 import logging
 import smtplib
 import imaplib
+import threading
 import mimetypes
 import subprocess
 import logging.handlers
@@ -91,7 +93,7 @@ class Youtube2mp3(Logging):
     def __init__(self):
         super(Youtube2mp3, self).__init__()
         FileOpts()
-        self.parse_email()        
+        self.parse_email() 
 
     def song_name(self,url):
         mp3 = os.popen("/usr/bin/youtube-dl --no-part "
@@ -167,11 +169,24 @@ class Youtube2mp3(Logging):
                 mail.expunge()
         except Exception as e:
             if re.search("FETCH command error: BAD", str(e), re.I):
-                #self.log("WARN", "No unread E-mails in your inbox.")
+                #No unread E-mails in their inbox
                 pass
             else:
                 self.log("ERROR", "Exception e => " + str(e))
+
+class Threading(Youtube2mp3):
+    def __init__(self, interval=1):
+        super(Threading, self).__init__()
+        self.interval = interval
+        thread = threading.Thread(target=self.run, args=())
+        thread.deamon = True
+        thread.start()
+
+    def run(self):
+        while True:
+            print("Parsing E-mail.")
+            self.parse_email() 
+            time.sleep(self.interval)
     
 if __name__ == '__main__':
-
-    Youtube2mp3()
+    Threading()
