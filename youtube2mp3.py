@@ -24,8 +24,8 @@ class FileOpts(User):
         if not self.file_exists(self.music_directory()):
             if not self.dir_exists(self.root_directory()):
                 self.mkdir_p(self.root_directory())
-                self.create_file(self.root_directory() + 'youtube2mp3.log')
-                self.create_file(self.root_directory() + 'whitelist.txt')
+                self.create_file(self.root_directory() + '/youtube2mp3.log')
+                self.create_file(self.root_directory() + '/whitelist.txt')
             self.mkdir_p(self.music_directory())
 
     def root_directory(self):
