@@ -1,6 +1,8 @@
 # youtube2mp3
 This is a Python program that allows you to convert youtube videos to mp3 by sending a youtube link to your email. This program monitors that inbox and will convert the videos and email them back.
 
+---
+
 ### System App Versions
 
 #### [ffmpeg]
@@ -19,6 +21,8 @@ libavfilter     6.107.100 /  6.107.100
 libswscale      4.  8.100 /  4.  8.100
 libswresample   2.  9.100 /  2.  9.100
 ```
+
+---
 
 ### Youtube-dl Download and Installation
 
@@ -39,3 +43,16 @@ sudo chmod a+rx /usr/local/bin/youtube-dl
 ```
 
 [youtube-dl website](https://rg3.github.io/youtube-dl/download.html)
+
+---
+
+### Scripts
+
+#### [crontab]
+
+```python
+pi@raspberrypi:~/Documents/Python/youtube2mp3 $ sudo crontab -l -u root | egrep -i youtube
+```
+```python
+* * * * * /bin/bash /home/pi/.youtube2mp3/scripts/is_youtube2mp3_running.sh
+```
