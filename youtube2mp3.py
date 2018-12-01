@@ -31,7 +31,7 @@ class FileOpts(User):
             self.mkdir_p(self.music_directory())
 
     def root_directory(self):
-        return "/home/anthony/.youtube2mp3"
+        return "/home/pi/.youtube2mp3"
 
     def music_directory(self):
         return str(self.root_directory()) + "/Music"
@@ -60,7 +60,7 @@ class Logging(object):
         comm = re.search("(WARN|INFO|ERROR)", str(level), re.M)
         try:
             handler = logging.handlers.WatchedFileHandler(
-                os.environ.get("LOGFILE","/home/anthony/.youtube2mp3/youtube2mp3.log"))
+                os.environ.get("LOGFILE","/home/pi/.youtube2mp3/youtube2mp3.log"))
             formatter = logging.Formatter(logging.BASIC_FORMAT)
             handler.setFormatter(formatter)
             root = logging.getLogger()
@@ -98,7 +98,7 @@ class Youtube2mp3(Logging,FileOpts):
             + str(url)
             + " --restrict-filenames --audio-format mp3"
             + " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
-        return '/home/anthony/.youtube2mp3/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
+        return '/home/pi/.youtube2mp3/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
     
     def send_mail(self,sender,sendto,password,port,subject,body,file_name):
         try:
@@ -112,7 +112,7 @@ class Youtube2mp3(Logging,FileOpts):
             mail.starttls()
             mail.login(sender,password)
             mail.sendmail(sender, sendto, message.as_string())
-	    mail.quit()
+            mail.quit()
             self.log("INFO", "Sent email successfully!")
         except smtplib.SMTPAuthenticationError:
             self.log("ERROR", "Could not athenticate with password and username!")
@@ -121,7 +121,7 @@ class Youtube2mp3(Logging,FileOpts):
     
     def white_list(self,passkey,sender):
         sender = re.sub('[<>]','',str(sender))
-        with open('/home/anthony/.youtube2mp3/whitelist.txt') as f:
+        with open('/home/pi/.youtube2mp3/whitelist.txt') as f:
             for name in f.read().splitlines():
                 allowed = re.search(str(passkey)+":"+str(sender), str(name), re.M | re.I)
                 if allowed is not None:
@@ -136,7 +136,7 @@ class Youtube2mp3(Logging,FileOpts):
         os.system("/usr/local/bin/youtube-dl --no-part "
             + str(url)
             + " --restrict-filenames --extract-audio"
-            + " --audio-format mp3 -o \"/home/anthony/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
+            + " --audio-format mp3 -o \"/home/pi/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
         self.log("INFO", "Sending song via E-mail.")
         self.send_mail('youtoob2mp3converter@gmail.com',
             re.sub('[<>]','',str(sendto)),
