@@ -97,7 +97,8 @@ class Youtube2mp3(Logging,FileOpts):
         mp3 = os.popen("/usr/local/bin/youtube-dl --no-part "
             + str(url)
             + " --restrict-filenames --audio-format mp3"
-            + " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
+            + " --get-filename -o \"%(title)s.%(ext)s\"").read().splitlines()[0]
+            #+ " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
         return '/home/pi/.youtube2mp3/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
     
     def send_mail(self,sender,sendto,password,port,subject,body,file_name):
@@ -132,17 +133,22 @@ class Youtube2mp3(Logging,FileOpts):
         return False
     
     def convert_video(self,url,sendto):
+        song_name = self.song_name(url)
         self.log("INFO", "Converting video now!")
+        self.log("INFO", "Song name: " + str(song_name))
         os.system("/usr/local/bin/youtube-dl --no-part "
             + str(url)
             + " --restrict-filenames --extract-audio"
-            + " --audio-format mp3 -o \"/home/pi/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
+            + " --audio-format mp3 -o "
+            + str(song_name))
+            #+ " --audio-format mp3 -o \"/home/pi/.youtube2mp3/Music/%(title)s.%(ext)s\"")
+            #+ " --audio-format mp3 -o \"/home/pi/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
         self.log("INFO", "Sending song via E-mail.")
         self.send_mail('youtoob2mp3converter@gmail.com',
             re.sub('[<>]','',str(sendto)),
             'etlnqaomfinozxka',
             587,'song','converted song attached',
-            self.song_name(url))
+            str(song_name))
         sys.exit(0)
     
     def parse_email(self):
