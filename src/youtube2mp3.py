@@ -168,7 +168,7 @@ class Youtube2mp3(Logging,FileOpts):
                         str(body[0][1]), re.M | re.I)
                     self.log("INFO", "data: " + str(data[0][1]))
                     mail.store(eid,'+FLAGS','\Deleted')
-                    if message is not None and message is not None and subject is not None:
+                    if message is not None and sender is not None and subject is not None:
                         if self.white_list(subject.group(2),sender.group(3)):
                             self.convert_video(message.group(),sender.group(3))
                 mail.expunge()
