@@ -128,8 +128,8 @@ class Youtube2mp3(Logging,FileOpts):
                 if allowed is not None:
                     self.log("INFO", str(allowed.group().split(":")[1]) + " is an authorized E-mail!")
                     return True
-        self.log("WARN", "You do not have permission to convert this video!")
-        self.log("INFO", "KEY => " + str(allowed.group()) + " is NOT unathorized!")
+                self.log("WARN", "You do not have permission to convert this video!")
+                self.log("INFO", "KEY => " + str(allowed.group()) + " is NOT unathorized!")
         return False
     
     def convert_video(self,url,sendto):
