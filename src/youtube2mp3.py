@@ -9,6 +9,7 @@ import imaplib
 import threading
 import mimetypes
 import subprocess
+import multiprocessing
 import logging.handlers
     
 from subprocess import Popen
@@ -31,7 +32,7 @@ class FileOpts(User):
             self.mkdir_p(self.music_directory())
 
     def root_directory(self):
-        return "/home/pi/.youtube2mp3"
+        return "/home/anthony/.youtube2mp3"
 
     def music_directory(self):
         return str(self.root_directory()) + "/Music"
@@ -60,22 +61,34 @@ class Logging(object):
         comm = re.search("(WARN|INFO|ERROR)", str(level), re.M)
         try:
             handler = logging.handlers.WatchedFileHandler(
-                os.environ.get("LOGFILE","/home/pi/.youtube2mp3/youtube2mp3.log"))
+                os.environ.get("LOGFILE","/home/anthony/.youtube2mp3/youtube2mp3.log")
+            )
             formatter = logging.Formatter(logging.BASIC_FORMAT)
             handler.setFormatter(formatter)
             root = logging.getLogger()
             root.setLevel(os.environ.get("LOGLEVEL", str(level)))
             root.addHandler(handler)
-            # Log all calls to this class in the logfile no matter what.
             if comm is None:
                 print(level + " is not a level. Use: WARN, ERROR, or INFO!")
                 return
             elif comm.group() == 'ERROR':
-                logging.error("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+                logging.error("("
+                    + str(level)
+                    + ") "
+                    + "Youtube2Mp3 - "
+                    + str(message))
             elif comm.group() == 'INFO':
-                logging.info("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+                logging.info("("
+                    + str(level)
+                    + ") "
+                    + "Youtube2Mp3 - "
+                    + str(message))
             elif comm.group() == 'WARN':
-                logging.warn("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
+                logging.warn("("
+                    + str(level)
+                    + ") "
+                    + "Youtube2Mp3 - "
+                    + str(message))
             print("(" + str(level) + ") " + "Youtube2Mp3 - " + str(message))
         except IOError as e:
             if re.search('\[Errno 13\] Permission denied:', str(e), re.M | re.I):
@@ -99,7 +112,7 @@ class Youtube2mp3(Logging,FileOpts):
             + " --restrict-filenames --audio-format mp3"
             + " --get-filename -o \"%(title)s.%(ext)s\"").read().splitlines()[0]
             #+ " --get-filename -o \"%(artist)s-%(title)s.%(ext)s\"").read().splitlines()[0]
-        return '/home/pi/.youtube2mp3/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
+        return '/home/anthony/.youtube2mp3/Music/' + re.sub('\.[a-z0-9]{3,5}$', '.mp3', str(mp3))
     
     def send_mail(self,sender,sendto,password,port,subject,body,file_name):
         try:
@@ -122,7 +135,7 @@ class Youtube2mp3(Logging,FileOpts):
     
     def white_list(self,passkey,sender):
         sender = re.sub('[<>]','',str(sender))
-        with open('/home/pi/.youtube2mp3/whitelist.txt') as f:
+        with open('/home/anthony/.youtube2mp3/whitelist.txt') as f:
             for name in f.read().splitlines():
                 allowed = re.search(str(passkey)+":"+str(sender), str(name), re.M | re.I)
                 if allowed is not None:
@@ -141,56 +154,56 @@ class Youtube2mp3(Logging,FileOpts):
             + " --restrict-filenames --extract-audio"
             + " --audio-format mp3 -o "
             + str(song_name))
-            #+ " --audio-format mp3 -o \"/home/pi/.youtube2mp3/Music/%(title)s.%(ext)s\"")
-            #+ " --audio-format mp3 -o \"/home/pi/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
+            #+ " --audio-format mp3 -o \"/home/anthony/.youtube2mp3/Music/%(title)s.%(ext)s\"")
+            #+ " --audio-format mp3 -o \"/home/anthony/.youtube2mp3/Music/%(artist)s-%(title)s.%(ext)s\"")
         self.log("INFO", "Sending song via E-mail.")
         self.send_mail('youtoob2mp3converter@gmail.com',
             re.sub('[<>]','',str(sendto)),
             'etlnqaomfinozxka',
             587,'song','converted song attached',
             str(song_name))
-        sys.exit(0)
+        #sys.exit(0)
     
-    def parse_email(self):
-        try:
-            mail = imaplib.IMAP4_SSL('smtp.gmail.com')
-            mail.login('youtoob2mp3converter@gmail.com','etlnqaomfinozxka')
-            mail.select('inbox')
-    
-            (code, data) = mail.search(None, '(UNSEEN)')
-            if code == 'OK':
-                for eid in data[0].split(' '):
-                    (typ, body) = mail.fetch(eid, '(BODY[TEXT])' )
-                    (typ, data) = mail.fetch(eid, '(RFC822)' )
-                    sender  = re.search('(^From: )(.*)(\<.*\>)', str(data[0][1]), re.M | re.I)
-                    subject = re.search('(^Subject: )([a-z0-9\-\_]+)', str(data[0][1]), re.M | re.I)
-                    message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
-                        str(body[0][1]), re.M | re.I)
-                    self.log("INFO", "data: " + str(data[0][1]))
-                    mail.store(eid,'+FLAGS','\Deleted')
-                    if message is not None and sender is not None and subject is not None:
-                        if self.white_list(subject.group(2),sender.group(3)):
-                            self.convert_video(message.group(),sender.group(3))
-                mail.expunge()
-        except Exception as e:
-            if re.search("FETCH command error: BAD", str(e), re.I):
-                #No unread E-mails in their inbox
-                pass
-            else:
-                self.log("ERROR", "Exception e => " + str(e))
+    def parse_email(self, seconds):
+        while(True):
+            time.sleep(seconds)
+            try:
+                mail = imaplib.IMAP4_SSL('smtp.gmail.com')
+                mail.login('youtoob2mp3converter@gmail.com','etlnqaomfinozxka')
+                mail.select('inbox')
+     
+                (code, data) = mail.search(None, '(UNSEEN)')
+                if code == 'OK':
+                    for eid in data[0].split(' '):
+                        (typ, body) = mail.fetch(eid, '(BODY[TEXT])' )
+                        (typ, data) = mail.fetch(eid, '(RFC822)' )
+                        sender  = re.search('(^From: )(.*)(\<.*\>)', str(data[0][1]), re.M | re.I)
+                        subject = re.search('(^Subject: )([a-z0-9\-\_]+)', str(data[0][1]), re.M | re.I)
+                        message = re.search('(https://(|www\.)youtu(\.be|be)(|\.com)\/(watch\?[\&\=a-z0-9\_\-]+|[\&\=\-\_a-z0-9]+))',
+                            str(body[0][1]), re.M | re.I)
+                        self.log("INFO", "data: " + str(data[0][1]))
+                        mail.store(eid,'+FLAGS','\Deleted')
+                        if message is not None and sender is not None and subject is not None:
+                            if self.white_list(subject.group(2),sender.group(3)):
+                                print('Converting video!')
+                                self.convert_video(message.group(),sender.group(3))
+                    mail.expunge()
+            except Exception as e:
+                if re.search("FETCH command error: BAD", str(e), re.I):
+                    print('No unread E-mails in their inbox')
+                    #No unread E-mails in their inbox
+                    pass
+                else:
+                    self.log("ERROR", "Exception e => " + str(e))
+                    pass
 
-class Threading(Youtube2mp3):
-    def __init__(self, seconds=1):
-        super(Threading, self).__init__()
-        self.seconds = seconds
-        thread = threading.Thread(target=self.run, args=())
-        thread.deamon = True
-        thread.start()
+class QueueProcess(object):
+    def __init__(self,seconds=1):
+        process = multiprocessing.Process(
+            target=Youtube2mp3().parse_email,name='parse_email',args=(seconds,)
+        )
+        #process.daemon = True
+        process.start()
 
-    def run(self):
-        while True:
-            self.parse_email() 
-            time.sleep(self.seconds)
-    
 if __name__ == '__main__':
-    Threading()
+    QueueProcess(5)
