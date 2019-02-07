@@ -3,6 +3,15 @@ This is a Python program that allows you to convert youtube videos to mp3 by sen
 
 ---
 
+### Installing youtube-dl
+
+Instructions can be found [HERE](https://rg3.github.io/youtube-dl/download.html)
+
+```javascript
+sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
+sudo chmod a+rx /usr/local/bin/youtube-dl
+```
+
 ### System App Versions
 
 #### [ffmpeg]
