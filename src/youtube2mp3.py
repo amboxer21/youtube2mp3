@@ -190,7 +190,6 @@ class Youtube2mp3(Logging,FileOpts):
                     mail.expunge()
             except Exception as e:
                 if re.search("FETCH command error: BAD", str(e), re.I):
-                    print('No unread E-mails in their inbox')
                     #No unread E-mails in their inbox
                     pass
                 else:
